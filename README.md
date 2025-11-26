@@ -6,3 +6,5 @@ day3: complete folder structures
 
 day4: db configuration
 
+day5: user schema 
+

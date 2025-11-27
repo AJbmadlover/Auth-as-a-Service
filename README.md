@@ -8,3 +8,5 @@ day4: db configuration
 
 day5: user schema 
 
+day6: signup route and controller setup (test with a valid email address and password);
+

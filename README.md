@@ -10,4 +10,8 @@ day5: user schema
 
 day6: signup route and controller setup (test with a valid email address and password);
 
-day7: login route and refresh token setup (HTTP only)
+day7: login route and refresh token setup (HTTP only) //using cookieOptions 
+
+day8: email verification setup 
+email verification was setup using resend API, upon getting the API key i added the details to my .env file, then created email templates, afterwards i created two controllers, one to resend email verification, the other two verify the email that was sent 
+

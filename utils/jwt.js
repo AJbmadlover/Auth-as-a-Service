@@ -27,3 +27,9 @@ exports.verifyAccessTokenAsync = (token) =>
       resolve(decoded);
     });
   });
+
+  
+  //verify email token
+  exports.verifyEmailToken = (token)=>{
+    return jwt.verify(token, process.env.JWT_EMAIL_SECRET)
+  } 

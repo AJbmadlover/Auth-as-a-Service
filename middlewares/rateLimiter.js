@@ -23,5 +23,13 @@ const resendLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-
-module.exports = {verifyLimiter,resendLimiter};
+const resetPasswordLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 1 day
+  max: 2, // allow 2 password reset requests per day
+  message: {
+    message: "Too many password reset attempts. Please try again later."
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+module.exports = {verifyLimiter,resendLimiter,resetPasswordLimiter};

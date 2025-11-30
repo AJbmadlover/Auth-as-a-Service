@@ -2,12 +2,15 @@ const User = require("../models/user");
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const cookieOptions = require("../utils/cookieOptions");
-const { sendVerificationEmail, resendVerificationEmail, generateVerificationToken, verifyEmailToken } = require("../utils/emailTemplates");
+const { sendVerificationEmail, resendVerificationEmail, generateVerificationToken,generateResetPasswordToken, resetPasswordEmail,verifyPasswordResetToken } = require("../utils/emailTemplates");
 const {
     signAccessToken,
     signRefreshToken,
     verifyRefreshToken, 
 } = require("../utils/jwt")
+//blacklist used tokens for password reset to prevent reuse
+const usedResetTokens = new Set();
+
 
 // Register a new user
 exports.registerUser = async (req, res) => {
@@ -37,25 +40,7 @@ exports.registerUser = async (req, res) => {
     console.log(error);
   }
 };
-
-// Resend verification email
-exports.resendVerification = async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (user.isVerified) return res.status(400).json({ message: "Email already verified" });
-
-    await resendVerificationEmail(email, user);
-
-    res.status(200).json({ message: "Verification email resent." });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error resending verification email" });
-  }
-};
-
-
+// Verify email
 exports.verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
@@ -81,9 +66,102 @@ exports.verifyEmail = async (req, res) => {
   }
 };
 
+// Resend verification email
+exports.resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.isVerified) return res.status(400).json({ message: "Email already verified" });
+
+    await resendVerificationEmail(email, user);
+
+    res.status(200).json({ message: "Verification email resent." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error resending verification email" });
+  }
+};
+
+//GET RESET PASSWORD LINK
+exports.getResetPasswordLink = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Generate reset password token
+    const token = generateResetPasswordToken(user);
+    await resetPasswordEmail(email, token);
+    res.status(200).json({ message: "Password reset email sent." });
+  } catch (error) {
+    res.status(500).json({ error: "Error sending password reset email" });
+    console.log(error);
+  }
+};
+
+// reset password
+exports.resetPassword = async (req, res) => {
+  try {
+     const { token } = req.query;
+
+    if (!token)
+      return res.status(400).json({ message: "Invalid or missing token" });
+     // Check if already used
+    if (usedResetTokens.has(token)) {
+      return res.status(400).json({ message: "Token already used" });
+    }
+    const payload = verifyPasswordResetToken(token);
+    if (!payload || !payload.email) {
+      return res.status(400).json({ message: "Token expired or invalid" });
+    }
+    const email = payload.email;  
+
+    const {newPassword, confirmNewPassword } = req.body;
+
+    if (!newPassword || !confirmNewPassword) {
+      return res.status(400).json({ error: "New password and confirm password are required" });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    if(newPassword !== confirmNewPassword) {
+      return res.status(400).json({ error: "New passwords do not match" });
+    }
+
+    // Hash the new password
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    user.password = hashedPassword;
+    await user.save();
+    // blacklist token so it can’t be reused
+    usedResetTokens.add(token);
+    //remove token from Set after a day
+    setTimeout(() => {
+      usedResetTokens.delete(token);
+    }, 24 * 60 * 60 * 1000);
+
+    //send success message 
+    res.status(200).json({ message: "Password reset successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Error resetting password" });
+    console.log(error);
+  }
+};
 
 //login as a user 
-
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body; 
@@ -163,3 +241,42 @@ exports.logout = (req, res) => {
 
     return res.status(200).json({ message: "Logged out successfully" });
 };   
+
+// Change password
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id; // Assuming user ID is available in req.user
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Current and new passwords are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ error: "Current password is incorrect" });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "New password must be at least 8 characters long" });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: "New password cannot be the same as the old password" });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+    user.password = hashedNewPassword;
+    user.passwordChangedAt = new Date();
+    await user.save();
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Error changing password" });
+    console.log(error);
+  }
+};

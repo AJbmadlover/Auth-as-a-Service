@@ -15,8 +15,6 @@ const user =   new mongoose.Schema({
         enum: ['user', 'admin'],
         default: 'user',
     },
-    verificationToken: String,
-    verificationTokenExpires: Date,
     isVerified: {
         type: Boolean,
         default: false
@@ -25,6 +23,7 @@ const user =   new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    passwordChangedAt: Date,
 
 }, {timestamps: true});
 

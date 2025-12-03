@@ -25,6 +25,21 @@ const apiKeySchema = new mongoose.Schema({
     type: Number,
     default: 1000,
   },
+  ative: {
+    type: Boolean,
+    default: true,
+  },
+  lastRequestAt: {
+    type: Date,
+  },
+  dailyRequests: {
+    type: Number,
+    default: 0,
+  },
+  totalRequests: {
+    type: Number,
+    default: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

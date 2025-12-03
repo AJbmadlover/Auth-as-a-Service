@@ -5,7 +5,7 @@ const { registerUser, loginUser, refreshToken,
         getResetPasswordLink,resetPassword,changePassword } = require("../controllers/authControllers");
 const { verifyLimiter, resendLimiter,resetPasswordLimiter } = require("../middlewares/rateLimiter");
 const { protect } = require('../middlewares/authenticate');
-const {adminOnly, oneAdmin} = require("../middlewares/adminMiddleware")
+const { oneAdmin} = require("../middlewares/adminMiddleware")
 
 
 router.post("/signup", oneAdmin, registerUser); //checks if there's already an admin in the system 

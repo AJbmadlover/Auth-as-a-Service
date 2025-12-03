@@ -1,0 +1,17 @@
+config:
+  target: "http://localhost:6500"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+  defaults:
+    headers:
+      content-type: "application/json"
+scenarios:
+  - name: "User Registration"
+    flow:
+      - post:
+          url: "/api/auth/signup"
+          json: {
+            email: "testuser{{ $randomInt(1, 10000) }}@example.com",
+            password: "Password123!"
+          }

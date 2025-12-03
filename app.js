@@ -6,7 +6,7 @@ const cookieParser = require("cookie-parser");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const app = express();
-
+const redis = require('./config/redis');
 
 //connect to mongoDb
 connectDB();

@@ -23,3 +23,5 @@ Also, i created a change password route, which is only available to users that h
 day10: admin middleware file was created, in the file, we check if the system has one admin already, we pass this middleware into the signup route, so when a new user signs up, we check the role they click, and if they opt to be an admin, but an admin is already in the system then we return an error to them. There's also a middleware function that restricts some routes to admin only, we check the request and who it is coming from, if the request is coming from someone who is not an Admin then we return an error to them.
 
 day11: create API keys 
+
+day12: add rate limit to api key using REDIS 

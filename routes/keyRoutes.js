@@ -18,9 +18,9 @@ router.get("/", protect, validateApiKey,  getApiKey);
 router.post("/toggle", protect, toggleApiKey);
 
 // Route to get all API keys for a user (Admin only)
-router.get("/all", protect, adminOnly, getApiKeys);
+router.get("/all", protect, adminOnly(), getApiKeys);
 
 // Route to delete an API key
-router.delete("/delete", protect, adminOnly, deleteApiKey);
+router.delete("/delete", protect, adminOnly(), deleteApiKey);
 
 module.exports = router;

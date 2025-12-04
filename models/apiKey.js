@@ -9,6 +9,11 @@ const apiKeySchema = new mongoose.Schema({
   user: {
    type:mongoose.Schema.Types.ObjectId, ref: 'User', required: true,
   },
+  rawKey:{
+    type:String, 
+    required:true, 
+    unique:true
+  },
   enabled: {
     type: Boolean,
     default: true,
@@ -25,7 +30,7 @@ const apiKeySchema = new mongoose.Schema({
     type: Number,
     default: 1000,
   },
-  ative: {
+  active: {
     type: Boolean,
     default: true,
   },

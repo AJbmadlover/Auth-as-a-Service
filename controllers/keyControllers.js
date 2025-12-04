@@ -28,9 +28,8 @@ exports.generateApiKey = async (req, res) => {
     await newApiKey.save();
 
     //  Store plain key in Redis for quick lookup
-    await redis.set(`apiKey:${apiKeyValue}`, userId.toString(), {
-      EX:86400 // Set expiration time for a day 
-    });
+    await redis.set(`apiKey:${apiKeyValue}`, userId.toString(), 'EX', 86400, 'NX');
+
 
     //  Send plain key to user
     res.status(201).json({ apiKey: apiKeyValue });

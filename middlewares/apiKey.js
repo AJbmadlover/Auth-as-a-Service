@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const ApiKey = require('../models/apiKey');
 const redis = require('../config/redis');
+const mongoose = require("mongoose");
 
 const MAX_TOTAL_REQUESTS = 1000; // total requests per key
 const MAX_DAILY_REQUESTS = 50; //total daily requests per key
@@ -9,7 +10,8 @@ const BLOCK_DURATION = 60 * 5;   // 5 minutes in seconds
 
 exports.validateApiKey = async (req, res, next) => {
   try {
-    const apiKeyValue = req.headers['x-api-key'];
+    const apiKeyValue = req.headers['x-api-key']?.trim();
+
     if (!apiKeyValue) {
       return res.status(401).json({ message: 'API key required' });
     }
@@ -32,7 +34,9 @@ exports.validateApiKey = async (req, res, next) => {
     // -----------------------------
     // 2️⃣ Redis lookup for valid API key
     // -----------------------------
+    
     const userId = await redis.get(`apiKey:${apiKeyValue}`);
+
     if (!userId) {
       // Increment brute-force counter
       const attempts = await redis.incr(bfKey);
@@ -51,11 +55,7 @@ exports.validateApiKey = async (req, res, next) => {
     // -----------------------------
     // 3️⃣ Verify hashed API key in MongoDB
     // -----------------------------
-    const userApiKeys = await ApiKey.find({ user: userId, active: true });
-
-    if (!userApiKeys.length) {
-      return res.status(403).json({ message: 'No active API keys found' });
-    }
+    const userApiKeys = await ApiKey.find({ user: new mongoose.Types.ObjectId(userId), active: true });
 
     let matchedKey = null;
     for (let key of userApiKeys) {
